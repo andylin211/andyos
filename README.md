@@ -1,6 +1,8 @@
 # andyos notes
 
-## 0. 工具
+[0. 工具](#id0)
+
+## 0. 工具 <a id="id0"></a>
 
 * [Bochs x86 PC emulator](https://sourceforge.net/projects/bochs/files/bochs/)
 	下载最新版本，编译（开启debugger和disasm），安装。
