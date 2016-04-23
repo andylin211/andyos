@@ -2,7 +2,7 @@
 
 * [0. 工具](#id0)
 
-* [1. Bochs引导软盘虚拟映像试验](#id1)
+* [1. Bochs引导软盘试验](#id1)
 
 <a id="id0"></a>
 ## 0. 工具 
@@ -23,18 +23,16 @@ sudo apt-get install build-essential nasm
 ```
 
 <a id="id1"></a>
-## 1. Bochs引导软盘虚拟映像试验
+## 1. Bochs引导软盘试验
 
-如果通过软盘引导系统，BIOS 将加载以 `0xAA55` 结尾的0号扇区到地址 `0x7c00` 开始的内存中，
-并将控制权交给该扇区中的指令。
-
-boot.asm 文件仅包含以下一个语句，表示一旦进入即死循环。
-```nasm
-	jmp	$
+从结果上看，执行命令行
+```bash
+bochs
 ```
+即运行 PC 模拟器， 并能成功引导名为 a.img 的软盘映像文件。
+引导程序什么也不做，只是死循环。
 
-为了顺利完成引导试验，还需要创建两个文件：bochsrc文件和虚拟软盘映像文件。
-
+bochs 之所以能够引导 a.img ，是因为 bochsrc 文件。
 bochsrc文件如下：
 ```nasm
 # how much memory the emulated machine will have
@@ -49,9 +47,29 @@ floppya: 1_44=a.img, status=inserted
 
 # choose the boot disk
 boot: floppy
+```
+这里 bochsrc 文件设置了 PC 模拟器的内存大小，ROM 的 image 文件，外存的软盘 image 文件，以及启动盘。
+`boot: floppy` 设置了 PC 模拟器从软盘启动。
+`floppya: 1_44=a.img, status=inserted` 设置了 PC 模拟器的连接软盘 A，
+且软盘 A 的映像文件为当前目录下的 a.img。
 
+过程如下：PC 模拟器的 BIOS 程序根据配置从软盘启动系统，它搜索全部已插入的软盘且发现软盘 A，
+确认软盘 A 的第 0 号扇区的最后两个字节为 `0xAA55`，以此认为软盘 A 是系统引导盘。
+BIOS 程序加载第 0 号扇区到内存中（起始地址为`0x7c00`），并将控制权交给这段程序。
+至此，BIOS 程序完成使命，引导扇区程序开始其使命。
+
+上述过程的关键字：第 0 号扇区，`0xAA55`，`0x7c00`。
+
+
+如果通过软盘引导系统，BIOS 将加载以 `0xAA55` 结尾的0号扇区到地址 `0x7c00` 开始的内存中，
+并将控制权交给该扇区中的指令。
+
+boot.asm 文件仅包含以下一个语句，表示一旦进入即死循环。
+```nasm
+	jmp	$
 ```
 
+为了顺利完成引导试验，还需要创建两个文件：bochsrc文件和虚拟软盘映像文件。
 虚拟软盘映像文件，取名为a.img，可以通过简单的 c 程序创建。如下：
 ```c
 /*
