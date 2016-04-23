@@ -1,9 +1,5 @@
 # andyos notes
 
-`pandoc --ascii -f markdown -t html -o notes.html -c andy.css notes.md`
-
-![](andyos.jpg)
-
 ## 0. 工具
 
 * [Bochs x86 PC emulator](https://sourceforge.net/projects/bochs/files/bochs/)
