@@ -29,8 +29,7 @@ sudo apt-get install build-essential nasm
 ```bash
 bochs
 ```
-即运行 PC 模拟器， 并能成功引导名为 a.img 的软盘映像文件。
-引导程序什么也不做，只是死循环。
+即运行 PC 模拟器。 模拟器能从虚拟软盘（映像文件为 a.img）引导系统。
 
 bochs 之所以能够引导 a.img ，是因为 bochsrc 文件。
 bochsrc文件如下：
@@ -48,9 +47,9 @@ floppya: 1_44=a.img, status=inserted
 # choose the boot disk
 boot: floppy
 ```
-这里 bochsrc 文件设置了 PC 模拟器的内存大小，ROM 的 image 文件，外存的软盘 image 文件，以及启动盘。
-`boot: floppy` 设置了 PC 模拟器从软盘启动。
-`floppya: 1_44=a.img, status=inserted` 设置了 PC 模拟器的连接软盘 A，
+这里 bochsrc 文件配置了 PC 模拟器的内存大小，ROM 的 image 文件，外存的软盘 image 文件，以及启动盘。
+`boot: floppy` 配置了 PC 模拟器从软盘启动。
+`floppya: 1_44=a.img, status=inserted` 配置了 PC 模拟器的连接软盘 A，
 且软盘 A 的映像文件为当前目录下的 a.img。
 
 过程如下：PC 模拟器的 BIOS 程序根据配置从软盘启动系统，它搜索全部已插入的软盘且发现软盘 A，
