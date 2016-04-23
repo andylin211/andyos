@@ -1,8 +1,11 @@
 # andyos notes
 
-[0. 工具](#id0)
+* [0. 工具](#id0)
 
-## 0. 工具 <a id="id0"></a>
+* [1. Bochs引导软盘虚拟映像试验](#id1)
+
+<a id="id0"></a>
+## 0. 工具 
 
 * [Bochs x86 PC emulator](https://sourceforge.net/projects/bochs/files/bochs/)
 	下载最新版本，编译（开启debugger和disasm），安装。
@@ -19,6 +22,7 @@ sudo make install
 sudo apt-get install build-essential nasm
 ```
 
+<a id="id1"></a>
 ## 1. Bochs引导软盘虚拟映像试验
 
 如果通过软盘引导系统，BIOS 将加载以 `0xAA55` 结尾的0号扇区到地址 `0x7c00` 开始的内存中，
