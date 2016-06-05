@@ -85,6 +85,7 @@ _kernel:
 	call	_init_clock					;	init_clock()
 	call	_init_cursor				;	init_cursor()
 	call	_init_8259a					;	init_8259a()
+	call	_init_keyboard
 	jmp		_restart
 _init_clock:
 	mov		al, 0x34
@@ -148,6 +149,11 @@ _init_8259a:
 	out		0xA1, al
 	nop
 	nop
+	ret
+_init_keyboard:
+	mov		dword [p_head], buf
+	mov		dword [p_tail], buf
+	mov		dword [p_count], 0
 	ret
 ;-----------------------save() restart() schedule()------------------------------
 ;save to PCB
@@ -220,6 +226,19 @@ _keyboard_handler:
 	call	_save					;	save();
 	mov		al, 0x20				;	out_byte(EOI);
 	out		0x20, al				;
+	in		al, 0x60				;	u8 scan_code = in_byte(0x60);
+	inc		word [shinning-2]		;	*shinning++;
+	cmp		dword [p_count], BUFLEN	;	if (*p_count < BUFLEN) {
+	jae		.full					;
+	mov		ebx, [p_head]			;
+	mov		[ebx], al				;		*(*p_head) = scan_code;
+	inc		dword [p_head]			;		*p_head++;
+	cmp		dword [p_head], (buf+BUFLEN);	if (*p_head == buf + BUFLEN) {
+	jne		.notend
+	mov		dword [p_head], buf		;			*p_head = buf;
+.notend:							;		}
+	inc		dword [p_count]			;		*p_count++;
+.full:								;	}
 	ret								;	return;
 ;
 sys_sendrecv	equ	ADDR
@@ -297,8 +316,6 @@ _code_ticks:
 	jmp		.loop
 LEN_CODE_TICKS	equ	($-_code_ticks)
 ;---------------------print------------------------
-cursor			equ	(0xB8000+80*25*2)
-_cursor			equ	80*25*2
 code_print		equ	ADDR
 _code_print:
 	mov		ax, ss
@@ -309,13 +326,13 @@ _code_print:
 	mov		ax, (0x700+' ')
 	mov		ecx, 80*25
 	xor		edi, edi
-	mov		dword [ds:_cursor], 0
 .clear:
 	mov		[edi], ax
 	add		edi, 2
 	loop	.clear
 	xor		edi, edi
 .loop:
+	call	_update_cursor
 	cmp		edi, 80*25*2
 	jae		.over
 	jmp		.read
@@ -324,8 +341,8 @@ _code_print:
 	;mov		ecx, 80*25
 	xor		edi, edi
 	;jmp		.clear
+
 .read:
-	mov		dword [ds:_cursor], edi
 	mov		eax, 1	;recv
 	mov		ebx, 4
 	int		SYSCALL
@@ -352,11 +369,106 @@ _code_print:
 	mul		bl
 	mov		edi, eax
 	jmp		.loop
+_update_cursor:
+	mov		al, 0xE	;high
+	mov		dx, 0x3D4
+	out		dx, al
+	mov		eax, edi
+	shr		ax, 9
+	mov		dx, 0x3D5
+	out		dx, al
+	mov		al, 0xF	;low
+	mov		dx, 0x3D4
+	out		dx, al
+	mov		eax, edi
+	shr		eax, 1
+	mov		dx, 0x3D5
+	out		dx, al
+	ret
 LEN_CODE_PRINT	equ	($-_code_print)
 ;----------------------keybd-----------------------
+;stack 0xE000~0xEFFF
+;0xE000 p_head
+;0xE004 p_tail
+;0xE008 p_count
+;0xE00C~0xE10B buf[0x100|256]
+p_head		equ	0xE000
+_p_head	equ	0
+p_tail		equ	0xE004
+_p_tail	equ	0x4
+p_count	equ	0xE008
+_p_count	equ	0x8
+buf		equ	0xE00C
+_buf		equ	0xC
+BUFLEN	equ	0x100
 code_keybd	equ	ADDR
 _code_keybd:
-	jmp	$
+	mov		ax, ss
+	mov		ds, ax
+	mov		es, ax
+	mov		fs, ax
+	mov		gs, ax
+.loop:								;do {
+	cmp		dword [_p_count], 0		;	if (*p_count > 0) {
+	je		.empty					;
+	cli								;		cli
+	mov		eax, [_p_tail]			;
+	sub		eax, 0xE000
+	mov		al, [eax]				;		u8 scan_code = *(*p_tail);
+	inc		dword [_p_tail]			;		*p_tail++;
+	cmp		dword [_p_tail], (_buf+BUFLEN);
+	jne		.notend					;		if (*p_tail == buf+BUFLEN) {
+	mov		dword [_p_tail], _buf	;			*p_tail = buf;
+.notend:							;		}
+	dec		dword [_p_count]		;		*p_count--;
+	sti								;		sti
+	push	eax
+	call	_kb_print_u8
+	add		esp, 4
+	push	dword ' '
+	call	_kb_print_char
+	add		esp, 4					;	}
+.empty:								;}
+	jmp		.loop					;while (1)
+_kb_print_char:
+	push	ebx
+	push	ecx
+	push	edx
+	mov		eax, 0
+	mov		ebx, 8
+	mov		ecx, 4
+	mov		edx, [esp+16]
+	int		SYSCALL
+	pop		edx
+	pop		ecx
+	pop		ebx
+	ret
+_kb_print_u8:
+	push	ebx
+	push	ecx
+	mov		bl, byte [esp+12]
+	mov		al, bl
+	shr		al, 4
+	mov		ecx, 2
+.loop:
+	and		al, 0xF
+	cmp		al, 9
+	ja		.alpha
+	add		al, '0'
+	jmp		.next
+.alpha:
+	sub		al, 10
+	add		al, 'A'
+.next:
+	push	eax
+	call	_kb_print_char
+	add		esp, 4
+	mov		al, bl
+	loop	.loop
+	pop		ecx
+	pop		ebx
+	ret
+
 LEN_CODE_KEYBD	equ	ADDR-code_keybd
 ;----------------------user------------------------
 %macro	PRINT_STR	2
@@ -450,7 +562,7 @@ str_code_print:	equ	OFFSET
 	db		"code_prnt:"
 len_code_print	equ	OFFSET-str_code_print
 str_code_keybd:	equ	OFFSET
-	db		"code_keybd:"
+	db		"code_keyb:"
 len_code_keybd	equ	OFFSET-str_code_keybd
 str_code_user:	equ	OFFSET
 	db		"code_user:"
@@ -472,7 +584,7 @@ _code_user:
 	call	_get_ticks
 	mov		dword [ds:0], eax
 	mov		edi, eax
-	PRINTF_STR_U32	str_ticks, len_ticks, edi, 0x8
+;	PRINTF_STR_U32	str_ticks, len_ticks, edi, 0x8
 .wait:
 	call	_get_ticks
 	mov		ebx, dword [ds:0]
@@ -664,12 +776,12 @@ proc_print	equ ADDR
 	dd		0		;eip
 	dd		0x7		;cs
 	dd		0x3202	;eflags
-	dd		0x10000;esp
+	dd		0x1000	;esp
 	dd		0xF		;ss
 	dd		40		;ldt_selector
 ldt_print		equ	ADDR
 	DESCRIPTOR	code_print, LEN_CODE_PRINT-1, ((0100<<12)+(1111b<<4)+0xA)	;D/B.P.DPL.S.
-	DESCRIPTOR	0xB8000, (0x10000-1), ((0100<<12)+(1111b<<4)+0x2)
+	DESCRIPTOR	0xB8000, (0x1000-1), ((0100<<12)+(1111b<<4)+0x2)
 	dd		4		;pid
 	dd		0		;flag
 	dd		0		;msgbody
