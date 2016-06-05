@@ -1,6 +1,6 @@
 all:	
-	echo 'floppya: image="a.img", status=inserted' > bochsrc
-	echo 'clock: sync=realtime, time0=local' >> bochsrc
+	echo 'floppya: image=a.img, status=inserted' > bochsrc
+	#echo 'clock: sync=realtime, time0=local' >> bochsrc
 	nasm andyos.asm -o a.img
 
 clean:

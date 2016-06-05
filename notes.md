@@ -899,4 +899,42 @@ ldt		equ	ADDR	;same ldt for every process
 ---------------------------
 
 
+vgaromimage: file=/usr/share/vgabios/vgabios.bin
 
+错误二：
+
+Event type: PANIC Device: [ ] Message: dlopen failed for module 'x': file not found 
+
+
+
+sudo apt-get install bochs-x
+
+
+错误三：
+
+bochs-biin: symbol lookup error: /usr/lib/bochs/plugins/libbx_x.so: undefined symbol: XpmCreatePixmapFromData
+
+作者指出，我们换一种显示的方案就可以了。
+首先按照bochs-sdl，用apt-get可以安装。
+
+
+sudo apt-get install bochs-sdl
+
+
+
+在我们的bochsrc文件中，加入一句话：
+
+
+display_library: sdl
+
+错误四：
+
+00000000000p[KMAP ] >>PANIC<< line 38: unknown host key name 'XK_0' (wrong keymap ?)
+
+注释掉下面这行
+
+
+
+#keyboard_mapping: enabled=1, map=/usr/share/bochs/keymaps/x11-pc-us.map
+
+然后那红色的hello world就出来了  
