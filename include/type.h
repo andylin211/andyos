@@ -43,8 +43,29 @@ typedef struct _tss_t
 	u32_t	other_regs[22];	/* not interested */
 	u16_t	debug_trap;		/* 0 */
 	u16_t	io_base;		/* 104 */
-	u8_t	end_of_io;		/* 0xff */
+	// u8_t	end_of_io;		/* 0xff */
 }tss_t;
+
+typedef struct _stack_frame_t
+{
+	u32_t	gs;
+	u32_t	fs;
+	u32_t	es;
+	u32_t	ds;
+	u32_t	edi;
+	u32_t	esi;
+	u32_t	ebp;
+	u32_t	kernel_esp;	// popad will ignore it
+	u32_t	ebx;
+	u32_t	edx;
+	u32_t	ecx;
+	u32_t	eax;
+	u32_t	eip;
+	u32_t	cs;
+	u32_t	eflags;
+	u32_t	esp;
+	u32_t	ss;
+}stack_frame_t;
 
 typedef struct _addr_range_desc_t
 {

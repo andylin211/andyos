@@ -11,20 +11,20 @@
 #define ring0_data_index	 	2	
 #define ring3_code_index 		3
 #define ring3_data_index	 	4	
-#define ring0_tss_index 		5
+#define tss_index		 		5
 
 #define ring0_code_selector 	8
 #define ring0_data_selector	 	16	
-#define ring3_code_selector 	24
-#define ring3_data_selector	 	32
-#define ring0_tss_selector 		40
+#define ring3_code_selector 	24 + 3
+#define ring3_data_selector	 	32 + 3
+#define tss_selector	 		40
 
 /* (high->low:|g|db|0|avl|+|0000|+|p|dpl|s|+|type|) */
 #define ring0_code_attr			0xc09a	//	((1100b<<12)+(1001b<<4)+0xa)	/* 0xa exec/read */
 #define ring0_data_attr			0xc092	//	((1100b<<12)+(1001b<<4)+0x2)	/* 0x2 read/write */
 #define ring3_code_attr			0xc0fa	//	((1100b<<12)+(1111b<<4)+0xa)	/* 0xa exec/read */
 #define ring3_data_attr			0xc0f2	//	((1100b<<12)+(1111b<<4)+0x2)	/* 0x2 read/write */
-#define ring0_tss_attr			0x89	//	((1000b<<4)+0x9) 				/* p-dpl-g 0x9(386 tss) */
+#define tss_attr				0x89	//	((1000b<<4)+0x9) 				/* p-dpl-g 0x9(386 tss) */
 
 #define gate_attr				0x8e00	//	(10001110b << 8)
 

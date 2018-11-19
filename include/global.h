@@ -11,10 +11,8 @@
 #endif
 
 extern_flag descriptor_t		g_gdt[gdt_size];
-extern_flag gdt_ptr_t			g_gdt_ptr;
-
 extern_flag gate_t				g_idt[idt_size];
-extern_flag idt_ptr_t			g_idt_ptr;
+extern_flag tss_t				g_tss;
 
 extern_flag u16_t*				g_screen_cursor;
 extern_flag char* 				g_log_cursor;

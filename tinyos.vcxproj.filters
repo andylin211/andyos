@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="include\assert.h" />
+    <ClInclude Include="include\const.h" />
+    <ClInclude Include="include\global.h" />
+    <ClInclude Include="include\mm.h" />
+    <ClInclude Include="include\t_stdio.h" />
+    <ClInclude Include="include\t_stdlib.h" />
+    <ClInclude Include="include\t_string.h" />
+    <ClInclude Include="include\type.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="include\env_post.mk" />
+    <None Include="include\env_prev.mk" />
+    <None Include="kernel\makefile" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="kernel\assert.c" />
+    <ClCompile Include="kernel\kernel.c" />
+    <ClCompile Include="kernel\mm.c" />
+    <ClCompile Include="kernel\screen.c" />
+    <ClCompile Include="kernel\t_stdio.c" />
+    <ClCompile Include="kernel\t_stdlib.c" />
+    <ClCompile Include="kernel\t_string.c" />
+  </ItemGroup>
+</Project>

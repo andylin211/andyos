@@ -2,7 +2,54 @@
 #include "global.h"
 #include "mm.h"
 
+static stack_frame_t sf;
 
+static void _declspec(naked) testA(void)
+{
+/*	char* p = 0;
+	u8_t fg = 0;
+	*/
+	__asm {
+		xor eax, eax
+			xor eax, eax
+			xor eax, eax
+			xor eax, eax
+			jmp $
+	}/*	for (;;)
+	{
+		p = (char*)(screen_init_cursor + 3);
+		fg = *p & 0x7;
+		fg++;
+
+		*p = (*p & 0xf8) | fg;
+	}*/
+}
+
+static void _declspec(naked) goto_ring3(void)
+{
+	sf.eflags = 0x202;
+	sf.eip = (u32_t)(void*)testA;
+	sf.cs = ring3_code_selector;
+	sf.ss = ring3_data_selector;
+	sf.esp = 0x400;
+
+	
+	__asm
+	{
+		lea		eax, [sf + 68]
+		mov		[g_tss + 4], eax
+		lea		eax, [sf]
+		mov		esp, eax
+		pop		gs
+		pop		fs
+		pop		es
+		pop		ds
+		popad
+		iretd
+	}
+}
+
+// ----------------
 
 void out_byte(u16_t port, u8_t val)
 {
@@ -33,9 +80,29 @@ static void blink(void)
 static void _declspec(naked) clock_handler(void)
 {
 	// t_printf(".");
+	__asm
+	{
+		pushad
+		push	ds
+		push	es
+		push	fs
+		push	gs
+	}
 	blink();
 	eoi();
-	__asm iretd
+
+	__asm
+	{
+		lea		eax, [sf + 68]
+		mov[g_tss + 4], eax
+		mov		esp, sf
+		pop		gs
+		pop		fs
+		pop		es
+		pop		ds
+		popad
+		iretd
+	}
 }
 
 static void set_descriptor(descriptor_t* desc, u32_t base, u32_t limit, u16_t attr)
@@ -48,10 +115,28 @@ static void set_descriptor(descriptor_t* desc, u32_t base, u32_t limit, u16_t at
 	desc->base_high = (base >> 24) & 0xff;
 }
 
+static void init_tss(void)
+{
+	t_printf("tss: 0x%x\r\n", (u32_t)(void*)&g_tss);
+
+	t_memset(&g_tss, 0, sizeof(tss_t));
+
+	g_tss.io_base = sizeof(tss_t);
+	g_tss.ss0 = ring0_data_selector;
+
+	__asm
+	{
+		mov		ax, tss_selector
+		ltr		ax
+	}
+}
+
 static void init_gdt(void)
 {
 	int i = 0;
-	t_printf("gdt: 0x%x, gdt_ptr: 0x%x\r\n", (u32_t)(void*)&g_gdt, (u32_t)(void*)&g_gdt_ptr);
+	gdt_ptr_t gdt_ptr = { 0 };
+
+	t_printf("gdt: 0x%x\r\n", (u32_t)(void*)&g_gdt);
 	
 	/* zero */
 	for (i = 0; i < gdt_size; i++)
@@ -61,14 +146,14 @@ static void init_gdt(void)
 	set_descriptor(&g_gdt[ring0_code_index], 0, 0xfffff, ring0_code_attr);
 	set_descriptor(&g_gdt[ring0_data_index], 0, 0xfffff, ring0_data_attr);
 	set_descriptor(&g_gdt[ring3_code_index], 0, 0xfffff, ring3_code_attr);
-	set_descriptor(&g_gdt[ring3_data_index], 0, 0xfffff, ring3_data_attr);
-	//set_descriptor(&g_gdt[ring3_data_index], 0, 0xfffff, ring0_tss_attr);
+	set_descriptor(&g_gdt[ring3_data_index], 0, 0xfffff, ring3_data_attr);	
+	set_descriptor(&g_gdt[tss_index], (u32_t)(void*)&g_tss, sizeof(tss_t) - 1, tss_attr);
 
 	/* set ptr */
-	g_gdt_ptr.address = (u32_t)(void*)&g_gdt;
-	g_gdt_ptr.limit = sizeof(descriptor_t) * gdt_size - 1;
+	gdt_ptr.address = (u32_t)(void*)&g_gdt;
+	gdt_ptr.limit = sizeof(descriptor_t) * gdt_size - 1;
 
-	__asm lgdt[g_gdt_ptr]
+	__asm lgdt[gdt_ptr]
 }
 
 static void set_gate(gate_t* gate, u32_t entry)
@@ -82,7 +167,9 @@ static void set_gate(gate_t* gate, u32_t entry)
 static void init_idt(void)
 {
 	int i = 0;
-	t_printf("idt: 0x%x, idt_ptr: 0x%x\r\n", (u32_t)(void*)&g_idt, (u32_t)(void*)&g_idt_ptr);
+	idt_ptr_t idt_ptr = { 0 };
+
+	t_printf("idt: 0x%x\r\n", (u32_t)(void*)&g_idt);
 	
 	/* zero */
 	for (i = 0; i < idt_size; i++)
@@ -90,13 +177,13 @@ static void init_idt(void)
 
 	/* set */
 	set_gate(&g_idt[clock_int_no], (u32_t)(void*)clock_handler);
-	t_printf("idt: 0x%x -> 0x%x\r\n", clock_int_no, (u32_t)(void*)clock_handler);
+	// t_printf("idt: 0x%x -> 0x%x\r\n", clock_int_no, (u32_t)(void*)clock_handler);
 
 	/* set ptr */
-	g_idt_ptr.address = (u32_t)(void*)&g_idt;
-	g_idt_ptr.limit = sizeof(gate_t) * idt_size - 1;
+	idt_ptr.address = (u32_t)(void*)&g_idt;
+	idt_ptr.limit = sizeof(gate_t) * idt_size - 1;
 
-	__asm lidt[g_idt_ptr]
+	__asm lidt[idt_ptr]
 }
 
 /*
@@ -231,13 +318,17 @@ void main(void)
 
 	init_idt();
 
+	init_tss();
+
 	init_clock();
 
 	init_8259a();
 
 	init_virtual_memory_mapping();
 
-	__asm sti
+	// __asm sti
+
+	goto_ring3();
 
 	idle();
 }

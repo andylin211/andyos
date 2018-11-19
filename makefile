@@ -3,7 +3,7 @@ top_dir			= c:/tinyos/
 include ./include/env_prev.mk
 
 .PHONY: all
-all: build hd
+all: clean build hd
 
 .PHONY: build
 build:
