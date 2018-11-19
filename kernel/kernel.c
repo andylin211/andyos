@@ -32,7 +32,7 @@ static void blink(void)
 
 static void _declspec(naked) clock_handler(void)
 {
-	t_printf(".");
+	// t_printf(".");
 	blink();
 	eoi();
 	__asm iretd

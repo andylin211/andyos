@@ -6,7 +6,7 @@
 ** Use VBoxManage or the VirtualBox Manager GUI to make changes.
 -->
 <VirtualBox xmlns="http://www.virtualbox.org/" version="1.15-windows">
-  <Machine uuid="{5c20c3f4-cc70-4107-9208-b8285b43c8c9}" name="tinyos" OSType="Other" snapshotFolder="Snapshots" lastStateChange="2018-11-19T13:13:37Z">
+  <Machine uuid="{5c20c3f4-cc70-4107-9208-b8285b43c8c9}" name="tinyos" OSType="Other" snapshotFolder="Snapshots" lastStateChange="2018-11-19T13:42:24Z">
     <MediaRegistry>
       <HardDisks>
         <HardDisk uuid="{35472c12-cf58-44fe-bb8e-cf110d91e9cf}" location="tinyos.vhd" format="VHD" type="Normal"/>
@@ -14,7 +14,7 @@
     </MediaRegistry>
     <ExtraData>
       <ExtraDataItem name="GUI/LastCloseAction" value="PowerOff"/>
-      <ExtraDataItem name="GUI/LastNormalWindowPosition" value="672,277,720,445"/>
+      <ExtraDataItem name="GUI/LastNormalWindowPosition" value="965,430,720,445"/>
       <ExtraDataItem name="GUI/RestrictedRuntimeDevicesMenuActions" value="HardDrives"/>
       <ExtraDataItem name="GUI/RestrictedRuntimeMachineMenuActions" value="SaveState,PowerOff"/>
       <ExtraDataItem name="GUI/StatusBar/IndicatorOrder" value="HardDisks,OpticalDisks,FloppyDisks,Network,USB,SharedFolders,Display,VideoCapture,Features,Mouse,Keyboard"/>
@@ -44,17 +44,10 @@
         <Adapter slot="0" enabled="true" MACAddress="080027588681" cable="true" type="Am79C973">
           <NAT/>
         </Adapter>
-        <Adapter slot="1" cable="true" type="Am79C973"/>
-        <Adapter slot="2" cable="true" type="Am79C973"/>
-        <Adapter slot="3" cable="true" type="Am79C973"/>
-        <Adapter slot="4" cable="true" type="Am79C973"/>
-        <Adapter slot="5" cable="true" type="Am79C973"/>
-        <Adapter slot="6" cable="true" type="Am79C973"/>
-        <Adapter slot="7" cable="true" type="Am79C973"/>
       </Network>
       <AudioAdapter driver="DirectSound" enabled="true"/>
       <GuestProperties>
-        <GuestProperty name="/VirtualBox/HostInfo/GUI/LanguageID" value="zh_CN" timestamp="1502713656759781500" flags=""/>
+        <GuestProperty name="/VirtualBox/HostInfo/GUI/LanguageID" value="zh_CN" timestamp="1542634944871370400" flags=""/>
       </GuestProperties>
     </Hardware>
     <StorageControllers>

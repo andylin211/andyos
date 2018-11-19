@@ -18,7 +18,7 @@ clean:
 
 .PHONY: hd
 hd:
-	$(debug_dir)hdmaker.exe "$(debug_dir)tinyos.vhd" "$(bin_dir)boot.bin" "$(bin_dir)loader.bin" "$(bin_dir)kernel.exe"
+	hdmaker.exe "$(debug_dir)tinyos.vhd" "$(bin_dir)boot.bin" "$(bin_dir)loader.bin" "$(bin_dir)kernel.exe"
 
 .PHONY: debug
 debug:
