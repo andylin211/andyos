@@ -76,6 +76,8 @@ typedef struct _pcb_t
 	void*			entry;
 	u32_t			pid;
 	char			name[16];
+	u32_t			priority;
+	u32_t			ticks;
 	char*			stack_top;
 	char			stack[user_stack_size];
 }pcb_t;

@@ -27,11 +27,13 @@
 #define tss_attr				0x89	//	((1000b<<4)+0x9) 				/* p-dpl-g 0x9(386 tss) */
 
 #define gate_attr				0x8e00	//	(10001110b << 8)
+#define syscall_attr			0xee00	//	(11101110b << 8)
 
 #define	gdt_size				128
-#define	idt_size				128
+#define	idt_size				256
 
 #define clock_int_no			0x20
+#define syscall_int_no			0x80
 
 /* interrupt */
 #define int_m_ctl				0x20

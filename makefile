@@ -15,7 +15,6 @@ clean:
 	make clean top_dir=$(top_dir) -C $(boot_dir)
 	make clean top_dir=$(top_dir) -C $(kernel_dir)
 	make clean top_dir=$(top_dir) -C $(debug_dir)
-	rm -f $(debug_dir)_tinyos.vhd
 
 .PHONY: hd
 hd:

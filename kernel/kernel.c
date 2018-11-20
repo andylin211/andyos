@@ -2,8 +2,16 @@
 #include "global.h"
 #include "mm.h"
 #include "t_string.h"
+#include "t_stdio.h"
 
+static void blink(u32_t i)
+{
+	char* p = (char*)(screen_init_cursor + 2 * i + 1);
+	u8_t fg = *p & 0x7;
+	fg++;
 
+	*p = (*p & 0xf8) | fg;
+}
 
 static void testA(void)
 {
@@ -11,11 +19,8 @@ static void testA(void)
 	u8_t fg = 0;
 	for (;;)
 	{
-		p = (char*)(screen_init_cursor + 3);
-		fg = *p & 0x7;
-		fg++;
-
-		*p = (*p & 0xf8) | fg;
+		blink(1);
+		__asm int 0x80
 	}
 }
 
@@ -25,11 +30,7 @@ static void testB(void)
 	u8_t fg = 0;
 	for (;;)
 	{
-		p = (char*)(screen_init_cursor + 9);
-		fg = *p & 0x7;
-		fg++;
-
-		*p = (*p & 0xf8) | fg;
+		blink(2);
 	}
 }
 
@@ -50,38 +51,69 @@ static void eoi(void)
 	out_byte(int_m_ctl, 0x20);
 }
 
-static void blink(void)
+static void schedule(void)
 {
-	char* p = (char*)(screen_init_cursor+1);
-	u8_t fg = *p & 0x7;
-	fg++;
+	g_proc_running->ticks--;
+	if (g_proc_running->ticks > 0)
+		return;
 
-	*p = (*p & 0xf8) | fg;
+	g_proc_running->ticks = g_proc_running->priority;
+	if (g_proc_running == g_pcb)
+	{
+		g_proc_running = &g_pcb[1];
+	}
+	else
+	{
+		g_proc_running = g_pcb;
+	}
 }
 
 static void _declspec(naked) clock_handler(void)
 {
 	__asm
 	{
+		cli
 		pushad
 		push	ds
 		push	es
 		push	fs
 		push	gs
-		mov		ax, ss
-		mov		ds, ax
+		mov		bx, ss
+		mov		ds, bx
 	}
 
-	blink();
+	g_ticks++;
+	blink(0);
 	eoi();
-
-	if (g_proc_running == g_pcb)
-		g_proc_running = &g_pcb[1];
-	else
-		g_proc_running = g_pcb;
+	schedule();
 
 	g_tss.esp0 = g_proc_running->regs_top;
+	__asm
+	{
+		mov		esp, [g_proc_running]
+		pop		gs
+		pop		fs
+		pop		es
+		pop		ds
+		popad
+		iretd
+	}
+}
 
+static void __declspec(naked) syscall_handler(void)
+{
+	__asm
+	{
+		cli
+		pushad
+		push	ds
+		push	es
+		push	fs
+		push	gs
+		mov		bx, ss
+		mov		ds, bx
+	}
+	blink(3);
 	__asm
 	{
 		mov		esp, [g_proc_running]
@@ -146,9 +178,9 @@ static void init_gdt(void)
 	__asm lgdt[gdt_ptr]
 }
 
-static void set_gate(gate_t* gate, u32_t entry)
+static void set_gate(gate_t* gate, u32_t entry, u16_t attr)
 {
-	gate->attr = gate_attr;
+	gate->attr = attr;
 	gate->entry_low = entry & 0xffff;
 	gate->entry_high = (entry >> 16) & 0xffff;
 	gate->selector = ring0_code_selector;
@@ -166,8 +198,8 @@ static void init_idt(void)
 		t_memset(&g_idt[i], 0, sizeof(gate_t));
 
 	/* set */
-	set_gate(&g_idt[clock_int_no], (u32_t)(void*)clock_handler);
-	// t_printf("idt: 0x%x -> 0x%x\r\n", clock_int_no, (u32_t)(void*)clock_handler);
+	set_gate(&g_idt[clock_int_no], (u32_t)(void*)clock_handler, gate_attr);
+	set_gate(&g_idt[syscall_int_no], (u32_t)(void*)syscall_handler, syscall_attr);
 
 	/* set ptr */
 	idt_ptr.address = (u32_t)(void*)&g_idt;
@@ -259,6 +291,9 @@ static void init_global(void)
 
 	g_log_cursor = (char*)log_start_address;
 
+	g_ticks = 0;
+	g_reenter = -1;
+
 	t_printf("g_screen_cursor: 0x%x, g_log_cursor: 0x%x\r\n", &g_screen_cursor, &g_log_cursor);
 
 	g_addr_range_count = (int)*(u32_t*)(addr_range_start_addr - 4);
@@ -300,11 +335,13 @@ static void idle()
 	}
 }
 
-static void init_pcb(pcb_t* p, void* entry, char* name, u32_t pid)
+static void init_pcb(pcb_t* p, void* entry, char* name, u32_t pid, u32_t priority)
 {
 	p->entry = entry;
 	t_memcpy(p->name, name, t_strlen(name));
 	p->pid = pid;
+	p->ticks = priority;
+	p->priority = priority;
 	p->stack_top = p->stack + user_stack_size;
 	p->regs_top = (char*)&(p->regs) + sizeof(p->regs);
 	p->regs.cs = ring3_code_selector;
@@ -323,8 +360,8 @@ static void init_process()
 {
 	g_proc_running = g_pcb;
 	
-	init_pcb(&g_pcb[0], testA, "A", 100);
-	init_pcb(&g_pcb[1], testB, "B", 101);
+	init_pcb(&g_pcb[0], testA, "A", 100, 30);
+	init_pcb(&g_pcb[1], testB, "B", 101, 10);
 }
 
 void _declspec(naked) main(void)

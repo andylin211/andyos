@@ -20,6 +20,9 @@ extern_flag pcb_t				g_pcb[2];
 extern_flag char				g_kernel_stack[kernel_stack_size];
 extern_flag char*				g_kernel_stack_top;
 
+extern_flag u32_t				g_ticks;
+extern_flag u32_t				g_reenter;
+
 extern_flag u16_t*				g_screen_cursor;
 extern_flag char* 				g_log_cursor;
 
