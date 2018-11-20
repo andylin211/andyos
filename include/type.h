@@ -43,7 +43,7 @@ typedef struct _tss_t
 	u32_t	other_regs[22];	/* not interested */
 	u16_t	debug_trap;		/* 0 */
 	u16_t	io_base;		/* 104 */
-	// u8_t	end_of_io;		/* 0xff */
+	u8_t	end_of_io;		/* 0xff */
 }tss_t;
 
 typedef struct _stack_frame_t

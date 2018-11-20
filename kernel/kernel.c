@@ -3,26 +3,19 @@
 #include "mm.h"
 
 static stack_frame_t sf;
+char* p = 0;
+u8_t fg = 0;
 
 static void _declspec(naked) testA(void)
 {
-/*	char* p = 0;
-	u8_t fg = 0;
-	*/
-	__asm {
-		xor eax, eax
-			xor eax, eax
-			xor eax, eax
-			xor eax, eax
-			jmp $
-	}/*	for (;;)
+	for (;;)
 	{
 		p = (char*)(screen_init_cursor + 3);
 		fg = *p & 0x7;
 		fg++;
 
 		*p = (*p & 0xf8) | fg;
-	}*/
+	}
 }
 
 static void _declspec(naked) goto_ring3(void)
@@ -31,6 +24,8 @@ static void _declspec(naked) goto_ring3(void)
 	sf.eip = (u32_t)(void*)testA;
 	sf.cs = ring3_code_selector;
 	sf.ss = ring3_data_selector;
+	sf.ds = ring3_data_selector;
+	sf.gs = ring3_data_selector;
 	sf.esp = 0x400;
 
 	
@@ -79,7 +74,6 @@ static void blink(void)
 
 static void _declspec(naked) clock_handler(void)
 {
-	// t_printf(".");
 	__asm
 	{
 		pushad
@@ -87,6 +81,8 @@ static void _declspec(naked) clock_handler(void)
 		push	es
 		push	fs
 		push	gs
+		mov		ax, ss
+		mov		ds, ax
 	}
 	blink();
 	eoi();
@@ -94,8 +90,8 @@ static void _declspec(naked) clock_handler(void)
 	__asm
 	{
 		lea		eax, [sf + 68]
-		mov[g_tss + 4], eax
-		mov		esp, sf
+		mov		[g_tss + 4], eax
+		// mov		esp, sf
 		pop		gs
 		pop		fs
 		pop		es
@@ -121,7 +117,8 @@ static void init_tss(void)
 
 	t_memset(&g_tss, 0, sizeof(tss_t));
 
-	g_tss.io_base = sizeof(tss_t);
+	g_tss.io_base = sizeof(tss_t) - 1;
+	g_tss.end_of_io = 0xff;
 	g_tss.ss0 = ring0_data_selector;
 
 	__asm
@@ -326,7 +323,7 @@ void main(void)
 
 	init_virtual_memory_mapping();
 
-	// __asm sti
+	//__asm sti
 
 	goto_ring3();
 

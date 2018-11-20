@@ -3,3 +3,4 @@ obj
 *.sdf
 *.user
 .vs
+_tinyos.vhd
