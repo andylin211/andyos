@@ -4,3 +4,4 @@ obj
 *.user
 .vs
 _tinyos.vhd
+tinyos.vbox-prev
