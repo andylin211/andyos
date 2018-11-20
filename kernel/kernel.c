@@ -1,13 +1,14 @@
 #define define_global_here
 #include "global.h"
 #include "mm.h"
+#include "t_string.h"
 
-static stack_frame_t sf;
-char* p = 0;
-u8_t fg = 0;
 
-static void _declspec(naked) testA(void)
+
+static void testA(void)
 {
+	char* p = 0;
+	u8_t fg = 0;
 	for (;;)
 	{
 		p = (char*)(screen_init_cursor + 3);
@@ -18,33 +19,19 @@ static void _declspec(naked) testA(void)
 	}
 }
 
-static void _declspec(naked) goto_ring3(void)
+static void testB(void)
 {
-	sf.eflags = 0x202;
-	sf.eip = (u32_t)(void*)testA;
-	sf.cs = ring3_code_selector;
-	sf.ss = ring3_data_selector;
-	sf.ds = ring3_data_selector;
-	sf.gs = ring3_data_selector;
-	sf.esp = 0x400;
-
-	
-	__asm
+	char* p = 0;
+	u8_t fg = 0;
+	for (;;)
 	{
-		lea		eax, [sf + 68]
-		mov		[g_tss + 4], eax
-		lea		eax, [sf]
-		mov		esp, eax
-		pop		gs
-		pop		fs
-		pop		es
-		pop		ds
-		popad
-		iretd
+		p = (char*)(screen_init_cursor + 9);
+		fg = *p & 0x7;
+		fg++;
+
+		*p = (*p & 0xf8) | fg;
 	}
 }
-
-// ----------------
 
 void out_byte(u16_t port, u8_t val)
 {
@@ -84,14 +71,20 @@ static void _declspec(naked) clock_handler(void)
 		mov		ax, ss
 		mov		ds, ax
 	}
+
 	blink();
 	eoi();
 
+	if (g_proc_running == g_pcb)
+		g_proc_running = &g_pcb[1];
+	else
+		g_proc_running = g_pcb;
+
+	g_tss.esp0 = g_proc_running->regs_top;
+
 	__asm
 	{
-		lea		eax, [sf + 68]
-		mov		[g_tss + 4], eax
-		// mov		esp, sf
+		mov		esp, [g_proc_running]
 		pop		gs
 		pop		fs
 		pop		es
@@ -269,7 +262,7 @@ static void init_global(void)
 	t_printf("g_screen_cursor: 0x%x, g_log_cursor: 0x%x\r\n", &g_screen_cursor, &g_log_cursor);
 
 	g_addr_range_count = (int)*(u32_t*)(addr_range_start_addr - 4);
-	t_printf("g_addr_range_count: 0x%x\r\n", g_addr_range_count);
+	// t_printf("g_addr_range_count: 0x%x\r\n", g_addr_range_count);
 
 	t_memcpy(g_addr_range, (void*)addr_range_start_addr, sizeof(addr_range_desc_t) * g_addr_range_count);
 	for (i = 0; i < g_addr_range_count; i++)
@@ -277,16 +270,16 @@ static void init_global(void)
 		switch (g_addr_range[i].type)
 		{
 		case addr_range_reserved:
-			t_printf("base: 0x%x, length: 0x%x, type=reserved\r\n", g_addr_range[i].base, g_addr_range[i].length);
+			// t_printf("base: 0x%x, length: 0x%x, type=reserved\r\n", g_addr_range[i].base, g_addr_range[i].length);
 			break;
 		case addr_range_memory:
-			t_printf("base: 0x%x, length: 0x%x, type=memory\r\n", g_addr_range[i].base, g_addr_range[i].length);
+			// t_printf("base: 0x%x, length: 0x%x, type=memory\r\n", g_addr_range[i].base, g_addr_range[i].length);
 			break;
 		default:
-			t_printf("base: 0x%x, length: 0x%x, type=unknown\r\n", g_addr_range[i].base, g_addr_range[i].length);
+			// t_printf("base: 0x%x, length: 0x%x, type=unknown\r\n", g_addr_range[i].base, g_addr_range[i].length);
 			break;
 		}
-	}
+	}	
 
 	g_kernel_image = *(kernel_image_info_t*)0x6000;
 	t_printf("[0x%x,0x%x,0x%x][0x%x,0x%x][0x%x,0x%x]\r\n",
@@ -307,8 +300,39 @@ static void idle()
 	}
 }
 
-void main(void)
+static void init_pcb(pcb_t* p, void* entry, char* name, u32_t pid)
 {
+	p->entry = entry;
+	t_memcpy(p->name, name, t_strlen(name));
+	p->pid = pid;
+	p->stack_top = p->stack + user_stack_size;
+	p->regs_top = (char*)&(p->regs) + sizeof(p->regs);
+	p->regs.cs = ring3_code_selector;
+	p->regs.ss = ring3_data_selector;
+	p->regs.esp = (u32_t)(void*)p->stack_top;
+	p->regs.eflags = 0x202;
+	p->regs.cs = ring3_code_selector;
+	p->regs.eip = (u32_t)entry;
+	p->regs.ds = ring3_data_selector;
+	p->regs.es = ring3_data_selector;
+	p->regs.fs = ring3_data_selector;
+	p->regs.gs = ring3_data_selector;
+}
+
+static void init_process()
+{
+	g_proc_running = g_pcb;
+	
+	init_pcb(&g_pcb[0], testA, "A", 100);
+	init_pcb(&g_pcb[1], testB, "B", 101);
+}
+
+void _declspec(naked) main(void)
+{
+	// use kernel stack
+	g_kernel_stack_top = g_kernel_stack + kernel_stack_size;
+	__asm mov		esp, [g_kernel_stack_top]
+
 	init_global();
 
 	init_gdt();
@@ -322,10 +346,13 @@ void main(void)
 	init_8259a();
 
 	init_virtual_memory_mapping();
+	
+	init_process();
 
-	//__asm sti
-
-	goto_ring3();
+	__asm sti
 
 	idle();
 }
+
+// debug bp: 0x84e5
+// clock_handler first instruction does not break

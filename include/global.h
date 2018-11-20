@@ -14,6 +14,12 @@ extern_flag descriptor_t		g_gdt[gdt_size];
 extern_flag gate_t				g_idt[idt_size];
 extern_flag tss_t				g_tss;
 
+extern_flag pcb_t*				g_proc_running;
+extern_flag pcb_t				g_pcb[2];
+
+extern_flag char				g_kernel_stack[kernel_stack_size];
+extern_flag char*				g_kernel_stack_top;
+
 extern_flag u16_t*				g_screen_cursor;
 extern_flag char* 				g_log_cursor;
 

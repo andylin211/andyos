@@ -73,4 +73,8 @@
 #define pte_max					0x400
 #define page_size				0x1000
 
+/* proc */
+#define user_stack_size			0x1000
+#define kernel_stack_size		0x1000
+
 #endif

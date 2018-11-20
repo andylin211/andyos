@@ -1,6 +1,8 @@
 #ifndef _type_h_
 #define _type_h_
 
+#include "const.h"
+
 typedef unsigned char 	u8_t;
 typedef unsigned short 	u16_t;
 typedef unsigned long 	u32_t;
@@ -66,6 +68,17 @@ typedef struct _stack_frame_t
 	u32_t	esp;
 	u32_t	ss;
 }stack_frame_t;
+
+typedef struct _pcb_t
+{
+	stack_frame_t	regs;
+	char*			regs_top;
+	void*			entry;
+	u32_t			pid;
+	char			name[16];
+	char*			stack_top;
+	char			stack[user_stack_size];
+}pcb_t;
 
 typedef struct _addr_range_desc_t
 {
