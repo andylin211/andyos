@@ -62,6 +62,7 @@ typedef struct _stack_frame_t
 	u32_t	edx;
 	u32_t	ecx;
 	u32_t	eax;
+	u32_t 	ret_addr;
 	u32_t	eip;
 	u32_t	cs;
 	u32_t	eflags;

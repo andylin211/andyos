@@ -78,5 +78,8 @@
 /* proc */
 #define user_stack_size			0x1000
 #define kernel_stack_size		0x1000
+#define eax_offset 				44
+#define esi_offset 				20
+#define ret_offset 				48
 
 #endif

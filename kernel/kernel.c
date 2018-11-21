@@ -51,6 +51,46 @@ static void eoi(void)
 	out_byte(int_m_ctl, 0x20);
 }
 
+static void __declspec(naked) restart()
+{
+	g_tss.esp0 = g_proc_running->regs_top;
+	__asm {
+		mov		esp, [g_proc_running]
+		pop		gs
+		pop		fs
+		pop		es
+		pop		ds
+		popad
+		add		esp, 4
+		iretd
+	}
+}
+
+static void __declspec(naked) save()
+{
+	__asm
+	{
+		cld 								// set df to a known value
+		pushad
+		push    ds
+		push    es
+		push    fs
+		push    gs
+		mov		ax, ss
+		mov		ds, ax
+		mov		es, ax
+		mov		esi, esp 					// esi -> regs
+		mov     esp, [g_kernel_stack_top]	// esp -> kernel stack top
+		push    restart 					// magic! ret will use this
+		mov		eax, [esi+ret_offset]
+		mov		[esp-4], eax
+		mov		eax, [esi+eax_offset]		// recover eax, esi
+		mov		esi, [esi+esi_offset]
+		jmp     [esp-4]						// goto ret addr (pushed by calling save())
+	}
+}
+
+
 static void schedule(void)
 {
 	g_proc_running->ticks--;
@@ -58,72 +98,24 @@ static void schedule(void)
 		return;
 
 	g_proc_running->ticks = g_proc_running->priority;
-	if (g_proc_running == g_pcb)
-	{
-		g_proc_running = &g_pcb[1];
-	}
-	else
-	{
-		g_proc_running = g_pcb;
-	}
+	g_proc_running = (g_proc_running == g_pcb) ? &g_pcb[1] : g_pcb;
 }
 
-static void _declspec(naked) clock_handler(void)
+static void __declspec(naked) clock_handler(void)
 {
-	__asm
-	{
-		cli
-		pushad
-		push	ds
-		push	es
-		push	fs
-		push	gs
-		mov		bx, ss
-		mov		ds, bx
-	}
-
+	save(); 	// magic! 
+	eoi();
 	g_ticks++;
 	blink(0);
-	eoi();
 	schedule();
-
-	g_tss.esp0 = g_proc_running->regs_top;
-	__asm
-	{
-		mov		esp, [g_proc_running]
-		pop		gs
-		pop		fs
-		pop		es
-		pop		ds
-		popad
-		iretd
-	}
+	__asm ret 	// magic! this routine return to restart
 }
 
 static void __declspec(naked) syscall_handler(void)
 {
-	__asm
-	{
-		cli
-		pushad
-		push	ds
-		push	es
-		push	fs
-		push	gs
-		mov		bx, ss
-		mov		ds, bx
-	}
+	save();
 	blink(3);
-	__asm
-	{
-		mov		esp, [g_proc_running]
-		pop		gs
-		pop		fs
-		pop		es
-		pop		ds
-		popad
-		iretd
-	}
+	__asm ret
 }
 
 static void set_descriptor(descriptor_t* desc, u32_t base, u32_t limit, u16_t attr)
@@ -300,21 +292,21 @@ static void init_global(void)
 	// t_printf("g_addr_range_count: 0x%x\r\n", g_addr_range_count);
 
 	t_memcpy(g_addr_range, (void*)addr_range_start_addr, sizeof(addr_range_desc_t) * g_addr_range_count);
-	for (i = 0; i < g_addr_range_count; i++)
+	/* for (i = 0; i < g_addr_range_count; i++)
 	{
 		switch (g_addr_range[i].type)
 		{
 		case addr_range_reserved:
-			// t_printf("base: 0x%x, length: 0x%x, type=reserved\r\n", g_addr_range[i].base, g_addr_range[i].length);
+			t_printf("base: 0x%x, length: 0x%x, type=reserved\r\n", g_addr_range[i].base, g_addr_range[i].length);
 			break;
 		case addr_range_memory:
-			// t_printf("base: 0x%x, length: 0x%x, type=memory\r\n", g_addr_range[i].base, g_addr_range[i].length);
+			t_printf("base: 0x%x, length: 0x%x, type=memory\r\n", g_addr_range[i].base, g_addr_range[i].length);
 			break;
 		default:
-			// t_printf("base: 0x%x, length: 0x%x, type=unknown\r\n", g_addr_range[i].base, g_addr_range[i].length);
+			t_printf("base: 0x%x, length: 0x%x, type=unknown\r\n", g_addr_range[i].base, g_addr_range[i].length);
 			break;
 		}
-	}	
+	} */	
 
 	g_kernel_image = *(kernel_image_info_t*)0x6000;
 	t_printf("[0x%x,0x%x,0x%x][0x%x,0x%x][0x%x,0x%x]\r\n",
@@ -326,13 +318,6 @@ static void init_global(void)
 		g_kernel_image.data_offset,
 		g_kernel_image.data_size
 		);
-}
-
-static void idle()
-{
-	for (;;) {
-		__asm nop
-	}
 }
 
 static void init_pcb(pcb_t* p, void* entry, char* name, u32_t pid, u32_t priority)
@@ -386,9 +371,7 @@ void _declspec(naked) main(void)
 	
 	init_process();
 
-	__asm sti
-
-	idle();
+	restart();
 }
 
 // debug bp: 0x84e5
