@@ -27,7 +27,7 @@ void __declspec(naked) restart()
 	__asm 
 	{
 		mov		esp, [g_proc_running]
-		lea 	eax, [esp + 4 * user_stack_size]
+		lea 	eax, [esp + reg_top_offset]
 		mov 	[g_tss + tss_esp0], eax
 		jmp 	restart2
 	}
@@ -108,6 +108,7 @@ void __declspec(naked) hwint##irq(void)	\
 	__asm{ in  	al, int_m_ctlmask		}\
 	__asm{ and 	al, ~ (1 << irq)		}\
 	__asm{ out 	int_m_ctlmask, al		}\
+	__asm{ ret							}\
 }
 
 hwint_master(0) 
@@ -140,6 +141,7 @@ void __declspec(naked) hwint##irq(void)	\
 	__asm{ in  	al, int_s_ctlmask		}\
 	__asm{ and 	al, ~ (1 << (irq-9))	}\
 	__asm{ out 	int_s_ctlmask, al		}\
+	__asm{ ret 							}\
 }
 
 hwint_slave(8) 

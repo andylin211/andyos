@@ -17,7 +17,7 @@ static void testA(void)
 	for (;;)
 	{
 		blink(1);
-		//__asm int 0x80
+		__asm int 0x80
 	}
 }
 

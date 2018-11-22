@@ -85,7 +85,7 @@
 #define eax_offset 				44
 #define esi_offset 				20
 #define ret_offset 				48
-
+#define reg_top_offset          72
 #define tss_esp0                4
 
 #endif

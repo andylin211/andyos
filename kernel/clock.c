@@ -25,7 +25,6 @@ static void schedule(void)
 
 static void clock_handler()
 {
-    __asm hlt
     g_ticks++;
     blink(0);
     schedule();
