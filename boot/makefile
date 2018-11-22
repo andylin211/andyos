@@ -1,4 +1,4 @@
-include ../include/env_prev.mk
+include ../build/env_prev.mk
 
 .PHONY: all
 all: $(bin_dir) $(boot_bin) $(loader_bin) 
@@ -13,4 +13,4 @@ $(loader_bin): $(loader_src)
 clean:
 	rm -rf $(loader_bin) $(boot_bin)
 
-include ../include/env_post.mk
+include ../build/env_post.mk

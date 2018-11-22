@@ -1,4 +1,4 @@
-#include "type.h"
+#include "include/type.h"
 
 int t_memset(void* addr, u8_t val, int size)
 {

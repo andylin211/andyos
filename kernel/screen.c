@@ -1,4 +1,4 @@
-#include "global.h"
+#include "include/global.h"
 
 void clear_screen(void)
 {

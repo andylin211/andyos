@@ -1,6 +1,6 @@
-#include "mm.h"
-#include "global.h"
-#include "t_stdio.h"
+#include "include/mm.h"
+#include "include/global.h"
+#include "include/t_stdio.h"
 
 /*
 * cr3 or pdbr

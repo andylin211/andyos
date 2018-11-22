@@ -1,4 +1,4 @@
-include ../include/env_prev.mk
+include ../build/env_prev.mk
 
 .PHONY: all
 all: $(kernel_bin)
@@ -15,4 +15,4 @@ clean:
 	rm -rf $(obj_dir)
 	rm -rf $(bin_dir)
 
-include ../include/env_post.mk
+include ../build/env_post.mk

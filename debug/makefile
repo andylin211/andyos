@@ -1,4 +1,4 @@
-include ../include/env_prev.mk
+include ../build/env_prev.mk
 
 .PHONY: debug
 debug:

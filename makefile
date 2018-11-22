@@ -1,6 +1,6 @@
 # top_dir 		= $(realpath .)/
 top_dir			= c:/tinyos/
-include ./include/env_prev.mk
+include ./build/env_prev.mk
 
 .PHONY: all
 all: clean build hd
@@ -24,14 +24,4 @@ hd:
 .PHONY: debug
 debug:
 	make debug -C $(debug_dir)
-
-
-
-#
-#run:
-#	bochs -q
-#vbox:
-#	Virtualbox C:\Users\andycylin\tiny\tinyos\tinyos.vbox
-#
-
 
