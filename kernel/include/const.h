@@ -82,4 +82,6 @@
 #define esi_offset 				20
 #define ret_offset 				48
 
+#define tss_esp0                4
+
 #endif

@@ -4,6 +4,9 @@
 #include "include/t_string.h"
 #include "include/t_stdio.h"
 #include "include/basic.h"
+#include "include/8259a.h"
+#include "include/int.h"
+#include "include/proc.h"
 
 
 static void init_tss(void)

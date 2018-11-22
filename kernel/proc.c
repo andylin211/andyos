@@ -39,7 +39,6 @@ void init_pcb(pcb_t* p, void* entry, char* name, u32_t pid, u32_t priority)
 	p->ticks = priority;
 	p->priority = priority;
 	p->stack_top = p->stack + user_stack_size;
-	p->regs_top = (char*)&(p->regs) + sizeof(p->regs);
 	p->regs.cs = ring3_code_selector;
 	p->regs.ss = ring3_data_selector;
 	p->regs.esp = (u32_t)(void*)p->stack_top;

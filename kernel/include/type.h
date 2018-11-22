@@ -73,7 +73,6 @@ typedef struct _stack_frame_t
 typedef struct _pcb_t
 {
 	stack_frame_t	regs;
-	char*			regs_top;
 	void*			entry;
 	u32_t			pid;
 	char			name[16];

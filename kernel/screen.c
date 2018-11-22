@@ -1,4 +1,7 @@
 #include "include/global.h"
+#include "include/basic.h"
+#include "include/t_string.h"
+#include "include/t_stdlib.h"
 
 void clear_screen(void)
 {

@@ -2,10 +2,12 @@
 #include "include/t_stdio.h"
 #include "include/t_string.h"
 #include "include/basic.h"
+#include "include/8259a.h"
 
 static void __declspec(naked) restart2()
 {
-	__asm {
+	__asm 
+	{
 		mov 	eax, [g_reenter]
 		dec 	eax
 		mov 	[g_reenter], eax
@@ -21,9 +23,11 @@ static void __declspec(naked) restart2()
 
 void __declspec(naked) restart()
 {
-	g_tss.esp0 = g_proc_running->regs_top;
-	__asm {
+	__asm 
+	{
 		mov		esp, [g_proc_running]
+		lea 	eax, [esp + 4 * user_stack_size]
+		mov 	[g_tss + tss_esp0], eax
 		jmp 	restart2
 	}
 }
@@ -62,9 +66,20 @@ static void __declspec(naked) save()
 	}
 }
 
+static void blink(u32_t i)
+{
+	char* p = (char*)(screen_init_cursor + 2 * i + 1);
+	u8_t fg = *p & 0x7;
+	fg++;
+
+	*p = (*p & 0xf8) | fg;
+}
 
 static void schedule(void)
 {
+	g_ticks++;
+	blink(0);
+
 	g_proc_running->ticks--;
 	if (g_proc_running->ticks > 0)
 		return;
@@ -87,35 +102,32 @@ static void enable_clock(void)
 	out_byte(int_m_ctlmask, flag);
 }
 
-static void blink(u32_t i)
+static void __declspec(naked) clock_handler(void)
 {
-	char* p = (char*)(screen_init_cursor + 2 * i + 1);
-	u8_t fg = *p & 0x7;
-	fg++;
-
-	*p = (*p & 0xf8) | fg;
+	__asm 
+	{
+		call 	save
+		call 	disable_clock
+		call 	eoi
+		sti
+		call 	schedule
+		int 	0x80
+		cli
+		call 	enable_clock
+		ret
+	}
 }
 
-void __declspec(naked) clock_handler(void)
+static void __declspec(naked) syscall_handler(void)
 {
-	save(); 	// magic! 
-	disable_clock();
-	eoi();
-	__asm sti
-	g_ticks++;
-	blink(0);
-	schedule();
-	__asm int 0x80
-	__asm cli
-	enable_clock();
-	__asm ret 	// magic! this routine return to restart
-}
-
-void __declspec(naked) syscall_handler(void)
-{
-	save();
-	blink(3);
-	__asm ret
+	__asm 
+	{
+		call 	save
+		push 	3
+		call 	blink
+		add 	esp, 4
+		ret
+	}
 }
 
 
