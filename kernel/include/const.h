@@ -41,6 +41,10 @@
 #define int_s_ctl				0xa0
 #define int_s_ctlmask			0xa1
 
+#define NR_IRQ                  16
+#define IRQ_CLOCK               0
+#define IRQ_KEYBOARD            1
+
 /* timer */
 #define timer_mode 				0x43
 #define timer0					0x40

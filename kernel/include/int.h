@@ -3,4 +3,6 @@
 
 void init_idt(void);
 
+void restart(void);
+
 #endif

@@ -1,5 +1,7 @@
 #include "include/const.h"
 #include "include/basic.h"
+#include "include/t_stdio.h"
+#include "include/global.h"
 
 /*
 * 8259a master port is 20h and 21h
@@ -49,8 +51,17 @@
 * 	eg: out_byte(0x20, 0x20)
 */
 
+void spurious_irq(u32_t irq)
+{
+	t_printf("!%d", irq);
+}
+
 void init_8259a(void)
 {
+	int i = 0;
+	for (i = 0; i < NR_IRQ; i++)
+		g_irq_table[i] = spurious_irq;
+
 	out_byte(int_m_ctl, 0x11); 
 	out_byte(int_s_ctl, 0x11);		// basic 
 
@@ -63,11 +74,68 @@ void init_8259a(void)
 	out_byte(int_m_ctlmask, 0x01); 
 	out_byte(int_s_ctlmask, 0x01);  // icw4
 
-	out_byte(int_m_ctlmask, 0xfe);	// enable clock
+	out_byte(int_m_ctlmask, 0xff);	
 	out_byte(int_s_ctlmask, 0xff); 	// disable all
 }
 
-void eoi(void)
+void __declspec(naked) disable_irq(u32_t irq)
 {
-	out_byte(int_m_ctl, 0x20);
+	__asm 
+	{
+		mov 	ecx, [esp + 4] 		// cl = irq
+		pushf
+		cli
+		mov 	ah, 1
+		rol 	ah, cl
+		cmp 	cl, 8
+		jae 	disable_8 			
+
+	disable_0:						// if irq < 8
+		in 		al, int_m_ctlmask
+		or 	 	al, ah
+		out 	int_m_ctlmask, al
+		popf 
+		ret 
+
+	disable_8: 						// if irq >= 8
+		in  	al, int_s_ctlmask
+		or 		al, ah
+		out 	int_s_ctlmask, al
+		popf
+		ret
+	}
+}
+
+void __declspec(naked) enable_irq(u32_t irq)
+{
+	__asm 
+	{
+		mov 	ecx, [esp + 4]		// cl = irq
+		pushf
+		cli
+		mov 	ah, ~1
+		rol 	ah, cl					
+		cmp 	cl, 8
+		jae 	enable_8
+	
+	enable_0: 						// if irq < 8
+		in 		al, int_m_ctlmask
+		and 	al, ah
+		out 	int_m_ctlmask, al
+		popf
+		ret
+
+	enable_8: 						// if irq >= 8 
+		in 		al, int_s_ctlmask
+		and 	al, ah
+		out 	int_s_ctlmask, al
+		popf
+		ret
+	}
+}
+
+void put_irq_handler(int irq, void* handler)
+{
+	disable_irq(irq);
+	g_irq_table[irq] = handler;
 }

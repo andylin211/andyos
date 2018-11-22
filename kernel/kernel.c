@@ -7,6 +7,7 @@
 #include "include/8259a.h"
 #include "include/int.h"
 #include "include/proc.h"
+#include "include/clock.h"
 
 
 static void init_tss(void)
@@ -51,15 +52,6 @@ static void init_gdt(void)
 	__asm lgdt[gdt_ptr]
 }
 
-
-static void init_clock(void)
-{
-	out_byte(timer_mode, rate_generator);
-
-	out_byte(timer0, count_down_high);
-	out_byte(timer0, count_down_low);
-}
-
 static void init_global(void)
 {
 	int i = 0;
@@ -71,6 +63,8 @@ static void init_global(void)
 
 	g_ticks = 0;
 	g_reenter = 0;
+
+	g_kernel_stack_top = g_kernel_stack + kernel_stack_size;
 
 	t_printf("g_screen_cursor: 0x%x, g_log_cursor: 0x%x\r\n", &g_screen_cursor, &g_log_cursor);
 
@@ -105,14 +99,9 @@ static void init_global(void)
 		g_kernel_image.data_size
 		);
 }
-extern void restart();
 
 int main(void)
-{
-	// use kernel stack
-	g_kernel_stack_top = g_kernel_stack + kernel_stack_size;
-	__asm mov		esp, [g_kernel_stack_top]
-
+{	
 	init_global();
 
 	init_gdt();
@@ -121,17 +110,14 @@ int main(void)
 
 	init_tss();
 
-	init_clock();
+	init_virtual_memory_mapping();
+
+	init_process();
 
 	init_8259a();
 
-	init_virtual_memory_mapping();
-	
-	init_process();
+	init_clock();
 
 	t_printf("restart: 0x%x\r\n", restart);
 	restart();
 }
-
-// debug bp: 0x84e5
-// clock_handler first instruction does not break

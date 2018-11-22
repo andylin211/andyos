@@ -4,6 +4,7 @@
 #include "include/basic.h"
 #include "include/8259a.h"
 
+
 static void __declspec(naked) restart2()
 {
 	__asm 
@@ -45,6 +46,7 @@ static void __declspec(naked) save()
 		mov		ax, ss
 		mov		ds, ax
 		mov		es, ax
+
 		mov 	eax, [g_reenter]
 		inc 	eax
 		mov 	[g_reenter], eax
@@ -55,14 +57,16 @@ static void __declspec(naked) save()
 		mov     esp, [g_kernel_stack_top]	// switch stack
 		push    restart 					// magic! ret will use this
 		mov		eax, [esi+ret_offset]
-		mov		[esp-4], eax
+		push 	eax
 		mov		eax, [esi+eax_offset]		// recover eax, esi
 		mov		esi, [esi+esi_offset]
-		jmp     [esp-4]						// goto ret addr (pushed by calling save())
+		ret									// goto ret addr (pushed by calling save())
 
 	reenter:
 		push 	restart2
-		jmp 	[esp + ret_offset + 4]
+		mov 	eax, [esp + ret_offset + 4]
+		push 	eax
+		ret
 	}
 }
 
@@ -73,49 +77,6 @@ static void blink(u32_t i)
 	fg++;
 
 	*p = (*p & 0xf8) | fg;
-}
-
-static void schedule(void)
-{
-	g_ticks++;
-	blink(0);
-
-	g_proc_running->ticks--;
-	if (g_proc_running->ticks > 0)
-		return;
-
-	g_proc_running->ticks = g_proc_running->priority;
-	g_proc_running = (g_proc_running == g_pcb) ? &g_pcb[1] : g_pcb;
-}
-
-static void disable_clock(void)
-{
-	char flag = in_byte(int_m_ctlmask);
-	flag |= 0x01;
-	out_byte(int_m_ctlmask, flag);
-}
-
-static void enable_clock(void)
-{
-	char flag = in_byte(int_m_ctlmask);
-	flag &= 0xfe;
-	out_byte(int_m_ctlmask, flag);
-}
-
-static void __declspec(naked) clock_handler(void)
-{
-	__asm 
-	{
-		call 	save
-		call 	disable_clock
-		call 	eoi
-		sti
-		call 	schedule
-		int 	0x80
-		cli
-		call 	enable_clock
-		ret
-	}
 }
 
 static void __declspec(naked) syscall_handler(void)
@@ -129,12 +90,91 @@ static void __declspec(naked) syscall_handler(void)
 		ret
 	}
 }
+	
+#define hwint_master(irq) \
+void __declspec(naked) hwint##irq(void)	\
+{										\
+	__asm{ call	save					}\
+	__asm{ in	al, int_m_ctlmask 		}\
+	__asm{ or 	al, 1 << irq			}\
+	__asm{ out	int_m_ctlmask, al		}\
+	__asm{ mov 	al, 0x20				}\
+	__asm{ out	int_m_ctl, al 			}\
+	__asm{ sti							}\
+	__asm{ push irq						}\
+	__asm{ call [g_irq_table + 4 * irq]	}\
+	__asm{ pop 	ecx						}\
+	__asm{ cli							}\
+	__asm{ in  	al, int_m_ctlmask		}\
+	__asm{ and 	al, ~ (1 << irq)		}\
+	__asm{ out 	int_m_ctlmask, al		}\
+}
 
+hwint_master(0) 
+hwint_master(1) 
+hwint_master(2) 
+hwint_master(3) 
+hwint_master(4) 
+hwint_master(5) 
+hwint_master(6) 
+hwint_master(7) 
+
+
+#define hwint_slave(irq) \
+void __declspec(naked) hwint##irq(void)	\
+{										\
+	__asm{ call	save					}\
+	__asm{ in	al, int_s_ctlmask 		}\
+	__asm{ or 	al, 1 << (irq-8)		}\
+	__asm{ out	int_s_ctlmask, al		}\
+	__asm{ mov 	al, 0x20				}\
+	__asm{ out	int_m_ctl, al 			}\
+	__asm{ nop 							}\
+	__asm{ nop 							}\
+	__asm{ out	int_s_ctl, al 			}\
+	__asm{ sti							}\
+	__asm{ push irq						}\
+	__asm{ call [g_irq_table + 4 * irq]	}\
+	__asm{ pop 	ecx						}\
+	__asm{ cli							}\
+	__asm{ in  	al, int_s_ctlmask		}\
+	__asm{ and 	al, ~ (1 << (irq-9))	}\
+	__asm{ out 	int_s_ctlmask, al		}\
+}
+
+hwint_slave(8) 
+hwint_slave(9) 
+hwint_slave(10) 
+hwint_slave(11) 
+hwint_slave(12) 
+hwint_slave(13) 
+hwint_slave(14) 
+hwint_slave(15) 
+
+static void* hwints[NR_IRQ] = {
+	hwint0, 
+	hwint1, 
+	hwint2, 
+	hwint3, 
+	hwint4, 
+	hwint5, 
+	hwint6, 
+	hwint7, 
+	hwint8, 
+	hwint9, 
+	hwint10, 
+	hwint11, 
+	hwint12, 
+	hwint13, 
+	hwint14, 
+	hwint15
+};
 
 void init_idt(void)
 {
 	int i = 0;
 	idt_ptr_t idt_ptr = { 0 };
+	
 
 	t_printf("idt: 0x%x\r\n", (u32_t)(void*)&g_idt);
 	
@@ -143,9 +183,13 @@ void init_idt(void)
 		t_memset(&g_idt[i], 0, sizeof(gate_t));
 
 	/* set */
-	set_gate(&g_idt[clock_int_no], (u32_t)(void*)clock_handler, gate_attr);
+	for (i = 0; i< NR_IRQ; i++) 
+		set_gate(&g_idt[clock_int_no + i], (u32_t)(void*)hwints[i], gate_attr);
+
+	// set_gate(&g_idt[clock_int_no], (u32_t)(void*)hwints[0], gate_attr);
+
 	set_gate(&g_idt[syscall_int_no], (u32_t)(void*)syscall_handler, syscall_attr);
-	t_printf("clock_handler: 0x%x, syscall_handler: 0x%x\r\n", clock_handler, syscall_handler);
+	t_printf("save: 0x%x, clock_handler: 0x%x, syscall_handler: 0x%x\r\n", save, hwint0, syscall_handler);
 
 	/* set ptr */
 	idt_ptr.address = (u32_t)(void*)&g_idt;
