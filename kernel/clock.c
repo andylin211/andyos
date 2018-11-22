@@ -26,6 +26,7 @@ static void schedule(void)
 static void clock_handler()
 {
     g_ticks++;
+	
     blink(0);
     schedule();
 }
@@ -37,7 +38,6 @@ void init_clock(void)
 	out_byte(timer0, count_down_high);
 	out_byte(timer0, count_down_low);
 
-    put_irq_handler(IRQ_CLOCK, clock_handler);
-    enable_irq(IRQ_CLOCK);
+    put_irq_handler(irq_clock, clock_handler);
+    enable_irq(irq_clock);
 }
-

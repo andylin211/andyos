@@ -9,9 +9,9 @@ static void __declspec(naked) restart2()
 {
 	__asm 
 	{
-		mov 	eax, [g_reenter]
-		dec 	eax
-		mov 	[g_reenter], eax
+		mov 	ebx, [g_reenter]
+		dec 	ebx
+		mov 	[g_reenter], ebx
 		pop		gs
 		pop		fs
 		pop		es
@@ -27,8 +27,8 @@ void __declspec(naked) restart()
 	__asm 
 	{
 		mov		esp, [g_proc_running]
-		lea 	eax, [esp + reg_top_offset]
-		mov 	[g_tss + tss_esp0], eax
+		lea 	ebx, [esp + reg_top_offset]
+		mov 	[g_tss + tss_esp0], ebx
 		jmp 	restart2
 	}
 }
@@ -47,36 +47,25 @@ static void __declspec(naked) save()
 		mov		ds, ax
 		mov		es, ax
 
+		mov		esi, esp 					// esi -> regs
+
 		mov 	eax, [g_reenter]
 		inc 	eax
 		mov 	[g_reenter], eax
 		cmp 	eax, 0
 		jne 	reenter// reentered
 		
-		mov		esi, esp 					// esi -> regs
 		mov     esp, [g_kernel_stack_top]	// switch stack
 		push    restart 					// magic! ret will use this
-		mov		eax, [esi+ret_offset]
-		push 	eax
-		mov		eax, [esi+eax_offset]		// recover eax, esi
-		mov		esi, [esi+esi_offset]
-		ret									// goto ret addr (pushed by calling save())
+		jmp 	exit0
 
 	reenter:
 		push 	restart2
-		mov 	eax, [esp + ret_offset + 4]
-		push 	eax
+	exit0:
+		mov 	eax, [esi + eax_offset]
+		push 	[esi + ret_offset]
 		ret
 	}
-}
-
-static void blink(u32_t i)
-{
-	char* p = (char*)(screen_init_cursor + 2 * i + 1);
-	u8_t fg = *p & 0x7;
-	fg++;
-
-	*p = (*p & 0xf8) | fg;
 }
 
 static void __declspec(naked) syscall_handler(void)
@@ -84,9 +73,10 @@ static void __declspec(naked) syscall_handler(void)
 	__asm 
 	{
 		call 	save
-		push 	3
-		call 	blink
-		add 	esp, 4
+		sti
+		call 	[g_syscall_table + eax * 4]
+		mov 	[esi + eax_offset], eax
+		cli
 		ret
 	}
 }
@@ -153,7 +143,7 @@ hwint_slave(13)
 hwint_slave(14) 
 hwint_slave(15) 
 
-static void* hwints[NR_IRQ] = {
+static void* hwints[nr_irq] = {
 	hwint0, 
 	hwint1, 
 	hwint2, 
@@ -185,7 +175,7 @@ void init_idt(void)
 		t_memset(&g_idt[i], 0, sizeof(gate_t));
 
 	/* set */
-	for (i = 0; i< NR_IRQ; i++) 
+	for (i = 0; i< nr_irq; i++) 
 		set_gate(&g_idt[clock_int_no + i], (u32_t)(void*)hwints[i], gate_attr);
 
 	// set_gate(&g_idt[clock_int_no], (u32_t)(void*)hwints[0], gate_attr);

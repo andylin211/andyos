@@ -8,6 +8,7 @@
 #include "include/int.h"
 #include "include/proc.h"
 #include "include/clock.h"
+#include "include/syscall.h"
 
 
 static void init_tss(void)
@@ -61,7 +62,7 @@ static void init_global(void)
 
 	g_log_cursor = (char*)log_start_address;
 
-	g_ticks = 0;
+	g_ticks = 11;
 	g_reenter = 0;
 
 	g_kernel_stack_top = g_kernel_stack + kernel_stack_size;
@@ -117,6 +118,8 @@ int main(void)
 	init_8259a();
 
 	init_clock();
+
+	init_syscall();
 
 	t_printf("restart: 0x%x\r\n", restart);
 	restart();

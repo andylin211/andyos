@@ -59,7 +59,7 @@ void spurious_irq(u32_t irq)
 void init_8259a(void)
 {
 	int i = 0;
-	for (i = 0; i < NR_IRQ; i++)
+	for (i = 0; i < nr_irq; i++)
 		g_irq_table[i] = spurious_irq;
 
 	out_byte(int_m_ctl, 0x11); 

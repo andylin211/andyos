@@ -1,5 +1,6 @@
 #include "include/global.h"
 #include "include/t_string.h"
+#include "include/proxy.h"
 
 static void blink(u32_t i)
 {
@@ -17,7 +18,7 @@ static void testA(void)
 	for (;;)
 	{
 		blink(1);
-		__asm int 0x80
+		print_int(get_ticks());
 	}
 }
 

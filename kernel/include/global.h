@@ -23,7 +23,8 @@ extern_flag char*				g_kernel_stack_top;
 extern_flag u32_t				g_ticks;
 extern_flag u32_t				g_reenter;
 
-extern_flag void*               g_irq_table[NR_IRQ];
+extern_flag void*               g_irq_table[nr_irq];
+extern_flag void*               g_syscall_table[nr_syscall];
 
 extern_flag u16_t*				g_screen_cursor;
 extern_flag char* 				g_log_cursor;
