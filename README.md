@@ -1,6 +1,6 @@
 # tinyos
 
-环境：windows + VS2015
+环境：windows + vs2015
 工具：make, nasm, rm, bochs
 其他：virtual box, winhex等
 
