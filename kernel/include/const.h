@@ -96,4 +96,41 @@
 #define reg_top_offset          72
 #define tss_esp0                4
 
+/*
+* cr3 or pdbr
+* 4 - PCD; 3 - PWT
+*/
+#define pdbr_cache_disabled    (1 << 4)
+#define pdbr_write_through     (1 << 3)
+
+/*
+* pde_t
+* 11-9  8 7  5 4   3   2   1   0 *
+* Avail G PS A PCD PWT U/S R/W P *
+*/
+#define pde_accessed           (1 << 5)
+#define pde_cache_disabled     (1 << 4)
+#define pde_write_through      (1 << 3)
+#define pde_user_pl            (1 << 2)
+#define pde_read_write         (1 << 1)
+#define pde_present            (1 << 0)
+#define pde_default            (pde_present | pde_read_write | pde_user_pl)
+
+/*
+* pte_t
+* 11-9  8 7   6 5 4   3   2   1   0 *
+* Avail G PAT D A PCD PWT U/S R/W P *
+*/
+#define pte_dirty              (1 << 6)
+#define pte_accessed           (1 << 5)
+#define pte_cache_disabled     (1 << 4)
+#define pte_write_through      (1 << 3)
+#define pte_user_pl            (1 << 2)
+#define pte_read_write         (1 << 1)
+#define pte_present            (1 << 0)
+#define pte_default            (pte_user_pl | pte_present | pte_read_write)
+
+/* cr0 */
+#define cr0_page               (1 << 31)
+
 #endif

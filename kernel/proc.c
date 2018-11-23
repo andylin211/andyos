@@ -57,6 +57,6 @@ void init_process()
 {
     g_proc_running = g_pcb;
     
-    init_pcb(&g_pcb[0], testA, "A", 100, 30);
-    init_pcb(&g_pcb[1], testB, "B", 101, 10);
+    init_pcb(&g_pcb[0], testA, "A", 100, 5);
+    init_pcb(&g_pcb[1], testB, "B", 101, 1);
 }
