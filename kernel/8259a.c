@@ -5,7 +5,7 @@
 
 /*
 * 8259a master port is 20h and 21h
-*         slave port is a0h and a1h
+*       slave port is a0h and a1h
 * 
 * icw: initialization control word
 * ocw: operation control word
@@ -27,7 +27,7 @@
 *    eg: out_byte(0x21, 0x20);
 * 
 * icw3 (21h, master)
-* icw3    = 00000100b (irq2 connects to slave)
+* icw3          = 00000100b (irq2 connects to slave)
 *     eg: out_byte(0x21, 0x04);
 *
 * icw3 (a1h, slave)
@@ -35,10 +35,10 @@
 * icw3{7..3}    = 0
 * 
 * icw4 (21h or a1h)
-* icw4{0}        = 1 (80x86 mode)
-* icw4{1}     = 0 (normal eoi)
+* icw4{0}       = 1 (80x86 mode)
+* icw4{1}       = 0 (normal eoi)
 * icw4{3..2}    = 0 (buffer mode)
-* icw4{4}        = 0 (sequence mode)
+* icw4{4}       = 0 (sequence mode)
 * icw4{7..5}    = 0 (not used)
 *     eg: out_byte(0x21, 0x01); 
 *
@@ -47,13 +47,13 @@
 *     eg: out_byte(0x21, 0xfe) //enable clock only
 *
 * ocw2 (20h, a0h)
-* ocw2{5}        = 1 (send end of interrupt to device!)
+* ocw2{5}       = 1 (send end of interrupt to device!)
 *     eg: out_byte(0x20, 0x20)
 */
 
-void spurious_irq(u32_t irq)
+void spurious_irq(void)
 {
-    t_printf("!%d", irq);
+    t_printf("!!!");
 }
 
 void init_8259a(void)
@@ -91,15 +91,15 @@ void __declspec(naked) disable_irq(u32_t irq)
         jae     disable_8             
 
     disable_0:                        // if irq < 8
-        in         al, int_m_ctlmask
-        or          al, ah
+        in      al, int_m_ctlmask
+        or      al, ah
         out     int_m_ctlmask, al
         popf 
         ret 
 
     disable_8:                         // if irq >= 8
         in      al, int_s_ctlmask
-        or         al, ah
+        or      al, ah
         out     int_s_ctlmask, al
         popf
         ret
@@ -119,14 +119,14 @@ void __declspec(naked) enable_irq(u32_t irq)
         jae     enable_8
     
     enable_0:                         // if irq < 8
-        in         al, int_m_ctlmask
+        in      al, int_m_ctlmask
         and     al, ah
         out     int_m_ctlmask, al
         popf
         ret
 
     enable_8:                         // if irq >= 8 
-        in         al, int_s_ctlmask
+        in      al, int_s_ctlmask
         and     al, ah
         out     int_s_ctlmask, al
         popf

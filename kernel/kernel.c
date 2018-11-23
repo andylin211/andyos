@@ -21,8 +21,8 @@ static void init_tss(void)
 
     __asm
     {
-        mov        ax, tss_selector
-        ltr        ax
+        mov   ax, tss_selector
+        ltr   ax
     }
 }
 

@@ -1,14 +1,7 @@
 #include "include/type.h"
-
-//extern     int t_memset(void* addr, u8_t val, int size);
-//
-//extern int t_strlen(char* str);
-//
-//extern int t_strcpy(char* dst, char* src);
-//
-//extern void print_char(char ch);
-//
-//extern char* t_ultoa(u32_t digit, char* str, int radix);
+#include "include/screen.h"
+#include "include/t_string.h"
+#include "include/t_stdlib.h"
 
 static void print_string(char* str)
 {

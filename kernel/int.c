@@ -12,12 +12,12 @@ static void __declspec(naked) restart2()
         mov     ebx, [g_reenter]
         dec     ebx
         mov     [g_reenter], ebx
-        pop        gs
-        pop        fs
-        pop        es
-        pop        ds
+        pop     gs
+        pop     fs
+        pop     es
+        pop     ds
         popad
-        add        esp, 4
+        add     esp, 4
         iretd
     }
 }
@@ -26,10 +26,10 @@ void __declspec(naked) restart()
 {
     __asm 
     {
-        mov        esp, [g_proc_running]
-        lea     ebx, [esp + reg_top_offset]
-        mov     [g_tss + tss_esp0], ebx
-        jmp     restart2
+        mov   esp, [g_proc_running]
+        lea   ebx, [esp + reg_top_offset]
+        mov   [g_tss + tss_esp0], ebx
+        jmp   restart2
     }
 }
 
@@ -43,11 +43,11 @@ static void __declspec(naked) save()
         push    es
         push    fs
         push    gs
-        mov        ax, ss
-        mov        ds, ax
-        mov        es, ax
+        mov     ax, ss
+        mov     ds, ax
+        mov     es, ax
 
-        mov        esi, esp                     // esi -> regs
+        mov     esi, esp                     // esi -> regs
 
         mov     eax, [g_reenter]
         inc     eax
@@ -60,10 +60,10 @@ static void __declspec(naked) save()
         jmp     exit0
 
     reenter:
-        push     restart2
+        push    restart2
     exit0:
         mov     eax, [esi + eax_offset]
-        push     [esi + ret_offset]
+        push    [esi + ret_offset]
         ret
     }
 }
@@ -72,9 +72,9 @@ static void __declspec(naked) syscall_handler(void)
 {
     __asm 
     {
-        call     save
+        call    save
         sti
-        call     [g_syscall_table + eax * 4]
+        call    [g_syscall_table + eax * 4]
         mov     [esi + eax_offset], eax
         cli
         ret
@@ -83,22 +83,20 @@ static void __declspec(naked) syscall_handler(void)
     
 #define hwint_master(irq) \
 void __declspec(naked) hwint##irq(void)    \
-{                                        \
+{                                          \
     __asm{ call    save                    }\
-    __asm{ in    al, int_m_ctlmask         }\
-    __asm{ or     al, 1 << irq            }\
-    __asm{ out    int_m_ctlmask, al        }\
+    __asm{ in      al, int_m_ctlmask       }\
+    __asm{ or      al, 1 << irq            }\
+    __asm{ out     int_m_ctlmask, al       }\
     __asm{ mov     al, 0x20                }\
-    __asm{ out    int_m_ctl, al             }\
-    __asm{ sti                            }\
-    __asm{ push irq                        }\
-    __asm{ call [g_irq_table + 4 * irq]    }\
-    __asm{ pop     ecx                        }\
-    __asm{ cli                            }\
-    __asm{ in      al, int_m_ctlmask        }\
+    __asm{ out     int_m_ctl, al           }\
+    __asm{ sti                             }\
+    __asm{ call    [g_irq_table + 4 * irq] }\
+    __asm{ cli                             }\
+    __asm{ in      al, int_m_ctlmask       }\
     __asm{ and     al, ~ (1 << irq)        }\
-    __asm{ out     int_m_ctlmask, al        }\
-    __asm{ ret                            }\
+    __asm{ out     int_m_ctlmask, al       }\
+    __asm{ ret                             }\
 }
 
 hwint_master(0) 
@@ -113,24 +111,22 @@ hwint_master(7)
 
 #define hwint_slave(irq) \
 void __declspec(naked) hwint##irq(void)    \
-{                                        \
-    __asm{ call    save                    }\
-    __asm{ in    al, int_s_ctlmask         }\
-    __asm{ or     al, 1 << (irq-8)        }\
+{                                          \
+    __asm{ call   save                     }\
+    __asm{ in     al, int_s_ctlmask        }\
+    __asm{ or     al, 1 << (irq-8)         }\
     __asm{ out    int_s_ctlmask, al        }\
-    __asm{ mov     al, 0x20                }\
-    __asm{ out    int_m_ctl, al             }\
+    __asm{ mov    al, 0x20                 }\
+    __asm{ out    int_m_ctl, al            }\
     __asm{ nop                             }\
     __asm{ nop                             }\
-    __asm{ out    int_s_ctl, al             }\
-    __asm{ sti                            }\
-    __asm{ push irq                        }\
-    __asm{ call [g_irq_table + 4 * irq]    }\
-    __asm{ pop     ecx                        }\
-    __asm{ cli                            }\
-    __asm{ in      al, int_s_ctlmask        }\
-    __asm{ and     al, ~ (1 << (irq-9))    }\
-    __asm{ out     int_s_ctlmask, al        }\
+    __asm{ out    int_s_ctl, al            }\
+    __asm{ sti                             }\
+    __asm{ call   [g_irq_table + 4 * irq]  }\
+    __asm{ cli                             }\
+    __asm{ in     al, int_s_ctlmask        }\
+    __asm{ and    al, ~ (1 << (irq-9))     }\
+    __asm{ out    int_s_ctlmask, al        }\
     __asm{ ret                             }\
 }
 
