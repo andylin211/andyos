@@ -165,10 +165,7 @@ static void* hwints[nr_irq] = {
 void init_idt(void)
 {
 	int i = 0;
-	idt_ptr_t idt_ptr = { 0 };
-	
-
-	t_printf("idt: 0x%x\r\n", (u32_t)(void*)&g_idt);
+	idt_ptr_t idt_ptr = { 0 };	
 	
 	/* zero */
 	for (i = 0; i < idt_size; i++)
@@ -178,11 +175,8 @@ void init_idt(void)
 	for (i = 0; i< nr_irq; i++) 
 		set_gate(&g_idt[clock_int_no + i], (u32_t)(void*)hwints[i], gate_attr);
 
-	// set_gate(&g_idt[clock_int_no], (u32_t)(void*)hwints[0], gate_attr);
-
 	set_gate(&g_idt[syscall_int_no], (u32_t)(void*)syscall_handler, syscall_attr);
-	t_printf("save: 0x%x, clock_handler: 0x%x, syscall_handler: 0x%x\r\n", save, hwint0, syscall_handler);
-
+	
 	/* set ptr */
 	idt_ptr.address = (u32_t)(void*)&g_idt;
 	idt_ptr.limit = sizeof(gate_t) * idt_size - 1;

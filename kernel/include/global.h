@@ -27,7 +27,6 @@ extern_flag void*               g_irq_table[nr_irq];
 extern_flag void*               g_syscall_table[nr_syscall];
 
 extern_flag u16_t*				g_screen_cursor;
-extern_flag char* 				g_log_cursor;
 
 extern_flag int					g_addr_range_count;
 extern_flag addr_range_desc_t	g_addr_range[addr_range_max_count];

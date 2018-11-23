@@ -1060,7 +1060,7 @@ map_kernel:
 ;;;;;;;;;;;;;;;;;;;;;;;
 %define 	abs_addr_here 		(loader_address + $ - $$)
 %define 	CRLF 0dh, 0ah
-str_loading_kernel:		db  	"loading kernel...", CRLF, 0
+str_loading_kernel:		db  	"---- tinyos loader ----", CRLF, 0
 str_from_sector:		db 		"from sector: 0x", 0
 str_sector_count:		db 		"sector count: 0x", 0
 str_new_line 			equ 	abs_addr_here

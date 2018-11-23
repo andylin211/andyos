@@ -65,9 +65,7 @@ static void update_page_table(u32_t va, u32_t pa)
 	/* not initialized */
 	if (g_pdt[pdi] == 0)
 	{
-		// t_printf("va: 0x%x, pa: 0x%x, pdi: 0x%x, pti: 0x%x, ", va, pa, pdi, pti);
 		pt = new_page_table();
-		// t_printf("new_pt: 0x%x\r\n", pt);
 		g_pdt[pdi] = ((u32_t)pt & 0xfffff000) + pde_default;
 		pt[pti] = (pa & 0xfffff000) + pte_default;
 	}

@@ -6,7 +6,7 @@
 ** Use VBoxManage or the VirtualBox Manager GUI to make changes.
 -->
 <VirtualBox xmlns="http://www.virtualbox.org/" version="1.15-windows">
-  <Machine uuid="{5c20c3f4-cc70-4107-9208-b8285b43c8c9}" name="tinyos" OSType="Other" snapshotFolder="Snapshots" lastStateChange="2018-11-21T07:22:56Z">
+  <Machine uuid="{5c20c3f4-cc70-4107-9208-b8285b43c8c9}" name="tinyos" OSType="Other" snapshotFolder="Snapshots" lastStateChange="2018-11-23T01:53:13Z">
     <MediaRegistry>
       <HardDisks>
         <HardDisk uuid="{35472c12-cf58-44fe-bb8e-cf110d91e9cf}" location="_tinyos.vhd" format="VHD" type="Normal"/>

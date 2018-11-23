@@ -34,36 +34,9 @@ void update_cursor(void)
 	out_byte(cursor_rw_port, cursor_offset & 0xff);
 }
 
-void show_log_length(void)
-{
-	static char buf[256];
-	u16_t* p = (u16_t*)(screen_init_cursor + screen_width * 2);
-	int size = 0;
-
-	t_ultoa((u32_t)g_log_cursor - log_start_address, buf, 10);
-	size = t_strlen(buf);
-	
-	//__asm jmp $
-
-	while (size)
-	{
-		size--;
-		p--;
-		
-		*p = (u16_t)((white_on_black << 8) + buf[size]);
-	}
-}
-
 void print_char(char ch)
 {
 	u16_t block = (white_on_black << 8) + ch;
-
-	if (ch)
-	{
-		*g_log_cursor = ch;
-		g_log_cursor++;
-		show_log_length();
-	}
 
 	switch (ch)
 	{

@@ -6,7 +6,6 @@
 
 static int spurious_syscall(void)
 {
-    __asm jmp $
     t_printf("#!");
     return 0;
 }
@@ -39,5 +38,4 @@ void init_syscall(void)
 
     g_syscall_table[nr_get_ticks] = get_ticks;
     g_syscall_table[nr_print_int] = print_int;
-    t_printf("print_int: 0x%x\r\n", print_int);
 }
